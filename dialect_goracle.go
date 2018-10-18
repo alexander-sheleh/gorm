@@ -106,6 +106,21 @@ func (o *goracle) HasColumn(tableName string, columnName string) bool {
 }
 
 func (*goracle) LimitAndOffsetSQL(limit, offset interface{}) (whereSQL string) {
+
+	whereSQL = `
+		SELECT 
+			*
+		FROM
+		(
+			SELECT a2F3.*, rownum r__
+				FROM
+				(
+					%v
+				) a2F3
+				WHERE ROWNUM <` + fmt.Sprintf("%d", limit) + `
+		) 
+		WHERE r__ >= ` + fmt.Sprintf("%d", offset)
+
 	// switch limit := limit.(type) {
 	// case int, uint, uint8, int8, uint16, int16, uint32, int32, uint64, int64:
 	// 	whereSQL += fmt.Sprintf("ROWNUM <= %d", limit)

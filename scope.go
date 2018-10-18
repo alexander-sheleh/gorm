@@ -346,8 +346,13 @@ func (scope *Scope) CombinedConditionSql() string {
 	if scope.Search.raw {
 		whereSQL = strings.TrimSuffix(strings.TrimPrefix(whereSQL, "WHERE ("), ")")
 	}
+
+	limitAndOffset := ""
+	if scope.Dialect().GetName() != "goracle" {
+		limitAndOffset = scope.limitAndOffsetSQL()
+	}
 	return joinSQL + whereSQL + scope.groupSQL() +
-		scope.havingSQL() + scope.orderSQL() + scope.limitAndOffsetSQL()
+		scope.havingSQL() + scope.orderSQL() + limitAndOffset
 }
 
 // Raw set raw sql
@@ -842,7 +847,15 @@ func (scope *Scope) prepareQuerySQL() {
 	if scope.Search.raw {
 		scope.Raw(scope.CombinedConditionSql())
 	} else {
-		scope.Raw(fmt.Sprintf("SELECT %v FROM %v %v", scope.selectSQL(), scope.QuotedTableName(), scope.CombinedConditionSql()))
+
+		if scope.Dialect().GetName() == "goracle" {
+			query := fmt.Sprintf("SELECT %v FROM %v %v", scope.selectSQL(), scope.QuotedTableName(), scope.CombinedConditionSql())
+			query = fmt.Sprintf(scope.limitAndOffsetSQL(), query)
+			scope.Raw(query)
+
+		} else {
+			scope.Raw(fmt.Sprintf("SELECT %v FROM %v %v", scope.selectSQL(), scope.QuotedTableName(), scope.CombinedConditionSql()))
+		}
 	}
 	return
 }
