@@ -107,6 +107,10 @@ func (o *goracle) HasColumn(tableName string, columnName string) bool {
 
 func (*goracle) LimitAndOffsetSQL(limit, offset interface{}) (whereSQL string) {
 
+	if limit.(int) < 0 || offset.(int) < 0 {
+		return "%v"
+	}
+
 	whereSQL = `
 		SELECT 
 			*
@@ -117,15 +121,15 @@ func (*goracle) LimitAndOffsetSQL(limit, offset interface{}) (whereSQL string) {
 				(
 					%v
 				) a2F3
-				WHERE ROWNUM <` + fmt.Sprintf("%d", limit) + `
+				WHERE ROWNUM <=` + fmt.Sprintf("%d", limit) + `
 		) 
-		WHERE r__ >= ` + fmt.Sprintf("%d", offset)
+		WHERE r__ > ` + fmt.Sprintf("%d", offset)
 
 	// switch limit := limit.(type) {
 	// case int, uint, uint8, int8, uint16, int16, uint32, int32, uint64, int64:
 	// 	whereSQL += fmt.Sprintf("ROWNUM <= %d", limit)
 	// }
-	return
+	return whereSQL
 }
 
 func (o *goracle) BuildForeignKeyName(tableName, field, dest string) string {
